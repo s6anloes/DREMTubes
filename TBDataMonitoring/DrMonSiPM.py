@@ -12,6 +12,7 @@ BLUBOLD='\033[94m\033[1m'
 BOLD   ='\033[1m'
 BLU    ='\033[94m'
 RED    ='\033[31m'
+YELLOW ='\033[33m'
 NOCOLOR='\033[0m'
 
 # CONFIGURATION
@@ -76,7 +77,7 @@ class DrMonSiPM:
   def bookOthers(self):
     '''Book histograms which were not booked during reading of file '''
     self.book1D( "boardID", 5, -0.5, 4.5, "BoardID", ymin=0)
-    self.book1D( "numBoard", 6, 0.5, 6.5, "Num. of Boards per Event")
+    self.book1D( "numBoard", 5, 0.5, 5.5, "Num. of Boards per Event")
 
 ##### DrMon method #######
   def evtFill(self, evt):
@@ -87,6 +88,19 @@ class DrMonSiPM:
     else:
       self.evtDict[key] = [evt]
 
+##### DrMon method #######
+  def checkOverUnderFlowFill(self, h, entry, trigID):
+    '''Method for filling one entry into the histogram and cheking for under-/overflow '''
+    h.Fill(entry)
+    nbins = h.GetNbinsX()
+    entry_bin = h.FindBin(entry)
+    hname = h.GetName()
+    if entry_bin == 0:
+      print(YELLOW, hname+": Underflow", NOCOLOR)
+      print(f"triggerID {trigID}; value: {entry}\n")
+    elif entry_bin == nbins+1:
+      print(YELLOW, hname+": Overflow", NOCOLOR)
+      print(f"triggerID {trigID}; value: {entry}\n")
 
 ##### DrMon method #######
   def hFill(self, event):
@@ -94,7 +108,7 @@ class DrMonSiPM:
     
     # These are the histograms which can be filled with "board info" only
     # i.e. no need to combine boards into full events
-    self.hDict["boardID"].Fill(event.BoardID)
+    self.checkOverUnderFlowFill(self.hDict["boardID"], event.BoardID, event.TriggerID)
     self.hDict["triggerID"].Fill(event.TriggerID)
     self.hDict["triggerTimeStamp"].Fill(event.TriggerTimeStamp)
 
@@ -123,17 +137,14 @@ class DrMonSiPM:
         
       if lgPhaSum > maxlg: maxlg = lgPhaSum 
       if hgPhaSum > maxhg: maxhg = hgPhaSum
-        
-      # Number of boards fired in this event
-      numboards = len(self.evtDict[key])
-      self.hDict["numBoard"].Fill(numboards)
 
       # for counting trigID independent of number of boards
       uniqueTrigID = self.evtDict[key][0].TriggerID
       self.hDict["uniqueTrigID"].Fill(uniqueTrigID)
-      
-
-    
+        
+      # Number of boards fired in this event
+      numboards = len(self.evtDict[key])
+      self.checkOverUnderFlowFill(self.hDict["numBoard"], numboards, uniqueTrigID)
 
     # can only book these histos after the maximal value is known
     self.book1D("lgPhaSum", 4096, 0, maxlg, "lgPha Sum")
@@ -286,8 +297,8 @@ class DrMonSiPM:
     oFlow = h.GetBinContent(nBins+1)
     if uFlow+oFlow > 0:
       print(BOLD)
-      print("Underflow:", h.GetBinContent(0))
-      print("Overflow :", h.GetBinContent(nBins+1))
+      print("Underflow:", uFlow)
+      print("Overflow :", oFlow)
       print(NOCOLOR)
     self.canvas.Update()
 

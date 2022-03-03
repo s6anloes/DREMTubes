@@ -7,3 +7,6 @@
 *.so
 *ACLiC*
 *.swp
+
+# ignore .dat files in TBDataMonitoring used for testing scripts
+TBDataMonitoring/*.dat
