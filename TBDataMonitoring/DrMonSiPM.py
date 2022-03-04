@@ -89,6 +89,21 @@ class DrMonSiPM:
       self.evtDict[key] = [evt]
 
 ##### DrMon method #######
+  def checkOverUnderFlow(self, h):
+    '''Check and print out over- and underflow of histogram '''
+    nbins = h.GetNbinsX()
+    hname = h.GetName()
+    uFlow = h.GetBinContent(0)
+    oFlow = h.GetBinContent(nbins+1)
+    if uFlow+oFlow > 0:
+      print(BOLD)
+      print(hname, ":")
+      print(YELLOW)
+      print("Underflow:", uFlow)
+      print("Overflow :", oFlow)
+      print(NOCOLOR)
+
+##### DrMon method #######
   def checkOverUnderFlowFill(self, h, entry, trigID):
     '''Method for filling one entry into the histogram and cheking for under-/overflow '''
     h.Fill(entry)
@@ -96,10 +111,10 @@ class DrMonSiPM:
     entry_bin = h.FindBin(entry)
     hname = h.GetName()
     if entry_bin == 0:
-      print(YELLOW, hname+": Underflow", NOCOLOR)
+      print(BOLD, YELLOW, hname+": Underflow", NOCOLOR)
       print(f"triggerID {trigID}; value: {entry}\n")
     elif entry_bin == nbins+1:
-      print(YELLOW, hname+": Overflow", NOCOLOR)
+      print(BOLD, YELLOW, hname+": Overflow", NOCOLOR)
       print(f"triggerID {trigID}; value: {entry}\n")
 
 ##### DrMon method #######
@@ -236,7 +251,7 @@ class DrMonSiPM:
     '''Draw all event data'''
     if self.canNum != 9:
       self.createCanvas(9)
-    self.canvas.cd(4); self.hDict['boardID'].Draw()
+    self.canvas.cd(4); self.hDict['boardID'].Draw()#; chechOverUnderFlow(self.hDict['boardID'])
     self.canvas.cd(1); self.hDict['numBoard'].Draw()
     self.canvas.cd(6); self.hDict['triggerTimeStamp'].Draw()
     self.canvas.cd(5); self.hDict['triggerID'].Draw()
@@ -292,6 +307,8 @@ class DrMonSiPM:
     if opt == "same":
       h.SetFillColor( h.GetFillColor() + 3 )
     h.Draw(opt)
+    self.checkOverUnderFlow(h)
+    """
     nBins=h.GetNbinsX()
     uFlow = h.GetBinContent(0)
     oFlow = h.GetBinContent(nBins+1)
@@ -300,6 +317,7 @@ class DrMonSiPM:
       print("Underflow:", uFlow)
       print("Overflow :", oFlow)
       print(NOCOLOR)
+    """
     self.canvas.Update()
 
     
