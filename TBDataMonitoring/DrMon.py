@@ -99,7 +99,7 @@ class DrMon:
   ##### DrMon method #######
   def NumOfLinesOfThisFile(self):
     '''Calculate the number of lines '''
-    cmd = 'wc -l ' + fname
+    cmd = 'wc -l ' + self.fname
     out = subprocess.getstatusoutput(cmd)[1]
     self.numOfLines = int(out.split()[0])
     
@@ -324,7 +324,7 @@ class DrMon:
     global stop   
     stop = False
     step=1
-    for i, line in enumerate(open(fname)):
+    for i, line in enumerate(open(self.fname)):
       if stop: break
       if i < offset: continue
       self.lastLine = i
@@ -642,48 +642,55 @@ def Usage():
 ################################################################
 # MAIN #########################################################
 ################################################################
-# Parse command line
-fname  = ""
-events = 999999999
-sample = 1
-run    = 0
-trigCut= 0
-try:
-  opts, args = getopt.getopt(sys.argv[1:], "hf:e:s:r:t:")
-except getopt.GetoptError as err:
-  print(str(err))
-  Usage()
-try:
-  for o,a in opts:
-    if    o == "-h": Usage()
-    elif  o == "-f": fname    = a
-    elif  o == "-e": events   = int(a)
-    elif  o == "-s": sample   = int(a)
-    elif  o == "-r": run      = a
-    elif  o == "-t": trigCut  = int(a)
-except(AttributeError): pass
+def main(fname, events, sample, trigCut):
+  print('Analyzing', fname)
+  drMon = DrMon(fname, events, sample, trigCut)
+  drMon.bookAdcHistos(512)
+  drMon.bookTdcHistos(512)
+  drMon.bookDwcHistos(512)
+  drMon.bookOthers()
+  drMon.SetFillColor(42)
+  drMon.readFile()
+  
+  return drMon
 
-if run > 0:
-  fname = "sps2021data.run%s.txt" % run
-  fname = PathToData + fname
-elif len(fname) < 1:
-  list_of_files = glob.glob( PathToData + 'sps2021data*txt' ) 
-  fname = max(list_of_files, key=os.path.getctime)
 
-if not os.path.isfile(fname):
-  print(RED, "[ERROR] File", fname, "not found", NOCOLOR)
-  sys.exit(404)
 
-# Install signal handler to interrupt file reading
-signal(SIGINT, handler)
+if __name__ == "__main__":
+  # Parse command line
+  fname  = ""
+  events = 999999999
+  sample = 1
+  run    = 0
+  trigCut= 0
+  try:
+    opts, args = getopt.getopt(sys.argv[1:], "hf:e:s:r:t:")
+  except getopt.GetoptError as err:
+    print(str(err))
+    Usage()
+  try:
+    for o,a in opts:
+      if    o == "-h": Usage()
+      elif  o == "-f": fname    = a
+      elif  o == "-e": events   = int(a)
+      elif  o == "-s": sample   = int(a)
+      elif  o == "-r": run      = a
+      elif  o == "-t": trigCut  = int(a)
+  except(AttributeError): pass
 
-print('Analyzing', fname)
-drMon = DrMon(fname, events, sample, trigCut)
-drMon.bookAdcHistos(512)
-drMon.bookTdcHistos(512)
-drMon.bookDwcHistos(512)
-drMon.bookOthers()
-drMon.SetFillColor(42)
-drMon.readFile()
-drMon.commander()
+  if run > 0:
+    fname = "sps2021data.run%s.txt" % run
+    fname = PathToData + fname
+  elif len(fname) < 1:
+    list_of_files = glob.glob( PathToData + 'sps2021data*txt' ) 
+    fname = max(list_of_files, key=os.path.getctime)
+
+  if not os.path.isfile(fname):
+    print(RED, "[ERROR] File", fname, "not found", NOCOLOR)
+    sys.exit(404)
+
+  # Install signal handler to interrupt file reading
+  signal(SIGINT, handler)
+  drMon = main(fname, events, sample, trigCut)
+  drMon.commander()
 

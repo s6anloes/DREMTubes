@@ -36,7 +36,7 @@ class DrMonSiPM:
   '''Data monitoring class for DualReadout 2021 Test Beam @H8  '''
 
   ##### DrMon method #######
-  def __init__(self, fname, acqMode, maxEvts, sample, trigCut=0):
+  def __init__(self, fname, acqMode, maxEvts, sample):
     '''Constructor '''
     self.fname      = fname    # File name
     self.acqMode    = acqMode
@@ -105,7 +105,7 @@ class DrMonSiPM:
 
 ##### DrMon method #######
   def checkOverUnderFlowFill(self, h, entry, trigID):
-    '''Method for filling one entry into the histogram and cheking for under-/overflow '''
+    '''Method for filling one entry into the histogram and checking for under-/overflow while filling'''
     h.Fill(entry)
     nbins = h.GetNbinsX()
     entry_bin = h.FindBin(entry)
@@ -302,7 +302,7 @@ class DrMonSiPM:
     if hname in self.hDict:
       h = self.hDict[hname]
     else:
-      print(RED, BOLD, 'Unknown histogram', NOCOLOR)
+      print(RED, BOLD, 'Unknown command', NOCOLOR)
       return
     if opt == "same":
       h.SetFillColor( h.GetFillColor() + 3 )
@@ -369,6 +369,7 @@ class DrMonSiPM:
 ################################################################
 # MAIN #########################################################
 ################################################################
+
 def Usage():
   print("Read raw data from text file and create monitor histograms")
   print("Usage: DrMon.py [options]")
@@ -377,47 +378,53 @@ def Usage():
   print("   -e maxEv      Maximum numver of events to be monitored (def=inf)")  
   print("   -s sample     Analyze only one event every 'sample'")
   print("   -r runNbr     Analyze run number runNbr")
-  print("   -t trigCut    Trigger cut [5=phys, 6=pede]")
   sys.exit(2)
 
-# Parse command line
-fname  = ""
-events = 999999999
-sample = 1
-run    = 0
-trigCut= 0
-try:
-  opts, args = getopt.getopt(sys.argv[1:], "hf:a:e:s:r:t:")
-except getopt.GetoptError as err:
-  print(str(err))
-  Usage()
-try:
-  for o,a in opts:
-    if    o == "-h": Usage()
-    elif  o == "-f": fname    = a
-    elif  o == "-a": acqMode  = int(a)
-    elif  o == "-e": events   = int(a)
-    elif  o == "-s": sample   = int(a)
-    elif  o == "-r": run      = a
-    elif  o == "-t": trigCut  = int(a)
-except(AttributeError): pass
 
-if run > 0:
-  fname = f"Run{run}_list.dat"
-  fname = PathToData + fname
-elif len(fname) < 1:
-  list_of_files = glob.glob( PathToData + 'Run*_list.dat' ) 
-  fname = max(list_of_files, key=os.path.getctime)
+def main(fname, acqMode, events, sample):
+  print('Analyzing ', fname)
+  drMon = DrMonSiPM(fname, acqMode, events, sample)
+  drMon.bookOthers()
+  drMon.readFile()
 
-if not os.path.isfile(fname):
-  print(RED, "[ERROR] File ", fname, " not found", NOCOLOR)
-  sys.exit(404)
+  return drMon
+  
 
-# Install signal handler to interrupt file reading
-signal(SIGINT, handler)
+if __name__ == "__main__":
+  # Parse command line
+  fname   = ""
+  acqMode = 0
+  events  = 999999999
+  sample  = 1
+  run     = 0
+  try:
+    opts, args = getopt.getopt(sys.argv[1:], "hf:a:e:s:r:")
+  except getopt.GetoptError as err:
+    print(str(err))
+    Usage()
 
-print('Analyzing ', fname)
-drMon = DrMonSiPM(fname, acqMode, events, sample, trigCut)
-drMon.bookOthers()
-drMon.readFile()
-drMon.commander()
+  try:
+    for o,a in opts:
+      if    o == "-h": Usage()
+      elif  o == "-f": fname    = a
+      elif  o == "-a": acqMode  = int(a)
+      elif  o == "-e": events   = int(a)
+      elif  o == "-s": sample   = int(a)
+      elif  o == "-r": run      = a
+  except(AttributeError): pass
+
+  if run > 0:
+    fname = f"Run{run}_list.dat"
+    fname = PathToData + fname
+  elif len(fname) < 1:
+    list_of_files = glob.glob( PathToData + 'Run*_list.dat' ) 
+    fname = max(list_of_files, key=os.path.getctime)
+
+  if not os.path.isfile(fname):
+    print(RED, "[ERROR] File ", fname, " not found", NOCOLOR)
+    sys.exit(404)
+
+  # Install signal handler to interrupt file reading
+  signal(SIGINT, handler)
+  drMon = main(fname, acqMode, events, sample)
+  drMon.commander()
