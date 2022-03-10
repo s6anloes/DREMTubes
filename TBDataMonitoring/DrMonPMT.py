@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 sys.path.append('../TBDataPreparation/202108_SPS/scripts/')
-import DREvent
+import DRPMTEvent
 import ROOT
 import getopt
 import glob
@@ -329,7 +329,7 @@ class DrMon:
       if i < offset: continue
       self.lastLine = i
       if i%self.sample==0:
-        ev = DREvent.DRdecode(line) 
+        ev = DRPMTEvent.DRdecode(line) 
         if i==0:
           print(ev.headLine())
         if i%step==0: print(ev)
