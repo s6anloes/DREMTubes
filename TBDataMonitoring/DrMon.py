@@ -1,12 +1,13 @@
 #!/usr/bin/env python
-import DREvent
 import sys
+sys.path.append('../TBDataPreparation/202108_SPS/scripts/')
+import DREvent
 import ROOT
 import getopt
 import glob
 import os
 import re
-import commands
+import subprocess
 
 PathToData='/home/dreamtest/SPS.2021.08/'
 BLUBOLD='\033[94m\033[1m'
@@ -99,7 +100,7 @@ class DrMon:
   def NumOfLinesOfThisFile(self):
     '''Calculate the number of lines '''
     cmd = 'wc -l ' + fname
-    out = commands.getstatusoutput(cmd)[1]
+    out = subprocess.getstatusoutput(cmd)[1]
     self.numOfLines = int(out.split()[0])
     
   ##### DrMon method #######
@@ -141,7 +142,7 @@ class DrMon:
     self.book2D( "HitMap_S", 3, -1.5, 1.5, 'tower', 'tower')
     self.book2D( "HitMap_C", 3, -1.5, 1.5, 'tower', 'tower')
     
-    print "Booked ADCs histograms"
+    print("Booked ADCs histograms")
 
   ##### DrMon method #######
   def bookTdcHistos(self, bins):
@@ -156,7 +157,7 @@ class DrMon:
       self.hDict[hname] = ROOT.TH1I(hname, htitle, bins, 0, 4096)      
     self.book1D( "tdc_sz", NumTdcChannels, -0.5, NumTdcChannels+0.5, 'NumOfTdcCh per event')
 
-    print "Booked TDCs histograms:"
+    print("Booked TDCs histograms:")
   
   ##### DrMon method #######
   def bookDwcHistos(self, bins):
@@ -183,7 +184,7 @@ class DrMon:
     self.book1D( "dwx1-x2", bins, -lim, lim, 'mm')
     self.book1D( "dwy1-y2", bins, -lim, lim, 'mm')
     
-    print "Booked DWCs histograms"
+    print("Booked DWCs histograms")
 
   ##### DrMon method #######
   def bookOthers(self):
@@ -196,7 +197,7 @@ class DrMon:
   ##### DrMon method #######
   def SetFillColor(self, col):
     '''Set fill color'''
-    for h in self.hDict.values():
+    for h in list(self.hDict.values()):
       h.SetFillColor(col)
 
 
@@ -251,7 +252,7 @@ class DrMon:
     self.hDict["chere1/2"].Fill( event.ADCs[64],  event.ADCs[65])
 
     # ADC
-    for ch, val in event.ADCs.items():
+    for ch, val in list(event.ADCs.items()):
       hname  = "adc-%02d" % ch
       self.hDict[hname].Fill(val)
     
@@ -285,7 +286,7 @@ class DrMon:
     self.hDict["PmtTotSC"].Fill(sumS, sumC)
     
     # TDC
-    for ch, val in event.TDCs.items():
+    for ch, val in list(event.TDCs.items()):
       hname  = "tdc-%02d" % ch
       self.hDict[hname].Fill(val[0])
     self.hDict["tdc_sz"].Fill(len(event.TDCs))
@@ -318,7 +319,7 @@ class DrMon:
   ##### DrMon method #######
   def readFile(self, offset=0):
     '''Read raw ascii data from file, call the decoding function, fill the histograms'''
-    print "Read and parse. Type CTRL+C to interrupt"
+    print("Read and parse. Type CTRL+C to interrupt")
      
     global stop   
     stop = False
@@ -330,8 +331,8 @@ class DrMon:
       if i%self.sample==0:
         ev = DREvent.DRdecode(line) 
         if i==0:
-          print ev.headLine()
-        if i%step==0: print ev
+          print(ev.headLine())
+        if i%step==0: print(ev)
         if i>step*10: step=step*10
         self.hFill(ev)
         self.lastEv = ev
@@ -340,35 +341,35 @@ class DrMon:
   ##### DrMon method #######
   def dumpHelp(self):
     '''Write the list of available histograms'''
-    print BLU,; print "Available histograms:", NOCOLOR
+    print(BLU, end=' '); print("Available histograms:", NOCOLOR)
     l = sorted(self.hDict.keys()) 
     lTdc =  [x for x in l if x.startswith("tdc-")]
     lAdc =  [x for x in l if x.startswith("adc-")]
     lOth =  [x for x in l if not x.startswith("adc-") and not x.startswith("tdc-") ]
-    print "  %-8s   %-8s   %-8s " % ( lTdc[0], '--->', lTdc[-1] )
-    print "  %-8s   %-8s   %-8s " % ( lAdc[0], '--->', lAdc[-1] )
+    print("  %-8s   %-8s   %-8s " % ( lTdc[0], '--->', lTdc[-1] ))
+    print("  %-8s   %-8s   %-8s " % ( lAdc[0], '--->', lAdc[-1] ))
     for i, h in enumerate( lOth ):
-      print "  %-8s" % h,
-      if (i+1)%8==0: print ""
+      print("  %-8s" % h, end=' ')
+      if (i+1)%8==0: print("")
 
-    print BLU; print "Available histograms, aliases:", NOCOLOR
+    print(BLU); print("Available histograms, aliases:", NOCOLOR)
     for i, h in enumerate( sorted( self.histoMap.keys() ) ):
-      print "  %-8s" % h,
-      if (i+1)%8==0: print ""
+      print("  %-8s" % h, end=' ')
+      if (i+1)%8==0: print("")
 
-    print BLU; print "Special canvases (calo maps, fers, etc ...)", NOCOLOR
+    print(BLU); print("Special canvases (calo maps, fers, etc ...)", NOCOLOR)
     for i, h in enumerate( self.cmdShCutsV ):
-      print "%2d) %-12s" % (i,h),
-      if (i+1)%5==0: print ""
+      print("%2d) %-12s" % (i,h), end=' ')
+      if (i+1)%5==0: print("")
 
-    print BLU;  
-    print "Other commands:", NOCOLOR
-    print "   l 0/1     SetLogY"
-    print "   z 0/1     SetLogZ"
-    print "   s         Dump file statistics"
-    print "   c color   Change the color of all histos" 
-    print "   r nEvts   Read other nEvts events"
-    print "   q         Quit"
+    print(BLU);  
+    print("Other commands:", NOCOLOR)
+    print("   l 0/1     SetLogY")
+    print("   z 0/1     SetLogZ")
+    print("   s         Dump file statistics")
+    print("   c color   Change the color of all histos") 
+    print("   r nEvts   Read other nEvts events")
+    print("   q         Quit")
 
 
   ##### DrMon method #######
@@ -405,7 +406,7 @@ class DrMon:
     else:
       for i in range(1,self.canNum+1) :
         self.canvas.cd(i).SetLogy(val)
-    print "SetLogy =", val
+    print("SetLogy =", val)
 
   ##### DrMon method #######
   def setLogZ(self, val):
@@ -415,7 +416,7 @@ class DrMon:
       return
     if self.canNum == 1:
       self.canvas.SetLogz(val)
-    print "SetLogz =", val
+    print("SetLogz =", val)
 
   ##### DrMon method #######
   def DrawDwcTDCs(self):
@@ -464,7 +465,7 @@ class DrMon:
     for i in range(5):
       self.canvas.cd(i+1)
       s = "fers-%d" % (i)
-      print s
+      print(s)
       self.hDict[ self.histoMap[s] ].Draw()
     self.canvas.Update()
 
@@ -539,7 +540,7 @@ class DrMon:
     elif hname in self.hDict:
       h = self.hDict[hname]
     else:
-      print RED, BOLD, 'Unknown histogram', NOCOLOR
+      print(RED, BOLD, 'Unknown histogram', NOCOLOR)
       return
     if opt == "same":
       h.SetFillColor( h.GetFillColor() + 3 )
@@ -548,10 +549,10 @@ class DrMon:
     uFlow = h.GetBinContent(0)
     oFlow = h.GetBinContent(nBins+1)
     if uFlow*oFlow > 0:
-      print BOLD
-      print "Underflow:", h.GetBinContent(0)
-      print "Overflow :", h.GetBinContent(nBins+1)
-      print NOCOLOR
+      print(BOLD)
+      print("Underflow:", h.GetBinContent(0))
+      print("Overflow :", h.GetBinContent(nBins+1))
+      print(NOCOLOR)
     self.canvas.Update()
 
   ##### DrMon method #######
@@ -563,22 +564,22 @@ class DrMon:
 
   ##### DrMon method #######
   def DumpStats(self):
-    print BLU, BOLD
-    print 'File name:', fname
-    print 'Events   :', self.lastEv.EventNumber
-    print 'PhysEv   :', self.lastEv.NumOfPhysEv
-    print 'PedeEv   :', self.lastEv.NumOfPedeEv
-    print 'SpilEv   :', self.lastEv.NumOfSpilEv
+    print(BLU, BOLD)
+    print('File name:', fname)
+    print('Events   :', self.lastEv.EventNumber)
+    print('PhysEv   :', self.lastEv.NumOfPhysEv)
+    print('PedeEv   :', self.lastEv.NumOfPedeEv)
+    print('SpilEv   :', self.lastEv.NumOfSpilEv)
     self.NumOfLinesOfThisFile()
-    print '#OfLines :', self.numOfLines 
-    print NOCOLOR
+    print('#OfLines :', self.numOfLines) 
+    print(NOCOLOR)
 
   ##### DrMon method #######
   def readMore(self, val):
     '''Interactive commander '''
     optInt=-1
     try: optInt=int(val)
-    except ValueError: print 'Invalid parameter'; return
+    except ValueError: print('Invalid parameter'); return
     if optInt>=0:
       self.maxEvts = self.lastLine + optInt         
       self.readFile(self.lastLine)
@@ -587,10 +588,10 @@ class DrMon:
   ##### DrMon method #######
   def ToNumber(self, val):
     '''Interactive commander '''
-    if not isinstance(val, (int, long)):
+    if not isinstance(val, int):
       try: return int(val)
       except ValueError: 
-        print 'Not an integer'
+        print('Not an integer')
         return None
     return None
 
@@ -602,8 +603,8 @@ class DrMon:
     while True:
       # Command
       self.dumpHelp()
-      print BLUBOLD + "\n__________________________________________________"
-      line = raw_input( 'DrMon prompt --> ' + NOCOLOR)
+      print(BLUBOLD + "\n__________________________________________________")
+      line = input( 'DrMon prompt --> ' + NOCOLOR)
       pars = line.split()
       if len(pars) == 0: continue
       cmd = pars[0]
@@ -611,7 +612,7 @@ class DrMon:
       if len(pars) > 1:
         opt = pars[1]
 
-      if   cmd == "q": print "Bye"; sys.exit(0)
+      if   cmd == "q": print("Bye"); sys.exit(0)
       elif cmd == "l": self.setLogY(opt)
       elif cmd == "z": self.setLogZ(opt)
       elif cmd == "s": self.DumpStats()
@@ -628,13 +629,13 @@ class DrMon:
 
 
 def Usage():
-  print "Read raw data from text file and create monitor histograms"
-  print "Usage: DrMon.py [options]"
-  print "   -f fname    Data file to analize (def=the latest data file)"
-  print "   -e maxEv    Maximum numver of events to be monitored (def=inf)"  
-  print "   -s sample   Analyze only one event every 'sample'"
-  print "   -r runNbr   Analyze run number runNbr"
-  print "   -t trigCut  Trigger cut [5=phys, 6=pede]"
+  print("Read raw data from text file and create monitor histograms")
+  print("Usage: DrMon.py [options]")
+  print("   -f fname    Data file to analize (def=the latest data file)")
+  print("   -e maxEv    Maximum numver of events to be monitored (def=inf)")  
+  print("   -s sample   Analyze only one event every 'sample'")
+  print("   -r runNbr   Analyze run number runNbr")
+  print("   -t trigCut  Trigger cut [5=phys, 6=pede]")
   sys.exit(2)
 
 
@@ -649,8 +650,8 @@ run    = 0
 trigCut= 0
 try:
   opts, args = getopt.getopt(sys.argv[1:], "hf:e:s:r:t:")
-except getopt.GetoptError, err:
-  print str(err)
+except getopt.GetoptError as err:
+  print(str(err))
   Usage()
 try:
   for o,a in opts:
@@ -670,13 +671,13 @@ elif len(fname) < 1:
   fname = max(list_of_files, key=os.path.getctime)
 
 if not os.path.isfile(fname):
-  print RED, "[ERROR] File", fname, "not found", NOCOLOR
+  print(RED, "[ERROR] File", fname, "not found", NOCOLOR)
   sys.exit(404)
 
 # Install signal handler to interrupt file reading
 signal(SIGINT, handler)
 
-print 'Analyzing', fname
+print('Analyzing', fname)
 drMon = DrMon(fname, events, sample, trigCut)
 drMon.bookAdcHistos(512)
 drMon.bookTdcHistos(512)
