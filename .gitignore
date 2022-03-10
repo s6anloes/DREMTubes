@@ -8,5 +8,9 @@
 *ACLiC*
 *.swp
 
-# ignore .dat files in TBDataMonitoring used for testing scripts
+# ignore backup files from python 2to3
+*.bak
+
+# ignore .dat and .txt files in TBDataMonitoring used for testing scripts
 TBDataMonitoring/*.dat
+TBDataMonitoring/*.txt
