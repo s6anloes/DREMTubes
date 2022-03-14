@@ -143,8 +143,8 @@ class DrMonSiPM(DrMon.DrMon):
       #self.checkOverUnderFlowFill(self.hDict["numBoard"], numboards, uniqueTrigID)
 
     # can only book these histos after the maximal value is known
-    self.book1D("lgPhaSum", self.hDict, 4096, 0, maxlg, "lgPha Sum")
-    self.book1D("hgPhaSum", self.hDict, 8192, 0, maxhg, "hgPha Sum")
+    self.book1D("lgPhaSum", self.hDict, 4096, 0, maxlg+1, "lgPha Sum")
+    self.book1D("hgPhaSum", self.hDict, 8192, 0, maxhg+1, "hgPha Sum")
     self.book1D("lgPhaSumZoom", self.hDict, 512, 2000, 5000, "lg Pha Sum Zoom")
 
     # need to loop over the list again to fill histos
@@ -198,9 +198,9 @@ class DrMonSiPM(DrMon.DrMon):
         self.evtFill(ev)
         
     
-    self.book1D("triggerID", self.hDict, 50, 0, maxtrigid, "TriggerID", ymin=0)
-    self.book1D("uniqueTrigID", self.hDict, 50, 0, maxtrigid, "UniqueTriggerID", ymin=0)
-    self.book1D("triggerTimeStamp", self.hDict, 50, 0, maxtrigtime, "TriggerTimeStamp", ymin=0)
+    self.book1D("triggerID", self.hDict, 50, 0, maxtrigid+1, "TriggerID", ymin=0)
+    self.book1D("uniqueTrigID", self.hDict, 50, 0, maxtrigid+1, "UniqueTriggerID", ymin=0)
+    self.book1D("triggerTimeStamp", self.hDict, 50, 0, maxtrigtime+1, "TriggerTimeStamp", ymin=0)
     self.hFillEvent()
         
 
