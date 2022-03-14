@@ -9,12 +9,17 @@ import os
 import re
 import subprocess
 
+import DrMon
+from DrMon import BLUBOLD, BOLD, BLU, RED, YELLOW, NOCOLOR
+import importlib
+importlib.reload(DrMon)
+
 PathToData='/home/dreamtest/SPS.2021.08/'
-BLUBOLD='\033[94m\033[1m'
-BOLD   ='\033[1m'
-BLU    ='\033[94m'
-RED    ='\033[31m'
-NOCOLOR='\033[0m'
+#BLUBOLD='\033[94m\033[1m'
+#BOLD   ='\033[1m'
+#BLU    ='\033[94m'
+#RED    ='\033[31m'
+#NOCOLOR='\033[0m'
 
 # CONFIGURATION
 NumAdcChannels = 96
@@ -36,7 +41,7 @@ def handler(signal_rcv, frame):
 #################################################################
 ### DrMon CLASS #################################################
 #################################################################
-class DrMon:
+class DrMonPMT(DrMon.DrMon):
   '''Data monitoring class for DualReadout 2021 Test Beam @H8  '''
 
   ##### DrMon method #######
@@ -102,14 +107,6 @@ class DrMon:
     cmd = 'wc -l ' + self.fname
     out = subprocess.getstatusoutput(cmd)[1]
     self.numOfLines = int(out.split()[0])
-    
-  ##### DrMon method #######
-  def book1D(self, hname, bins, mi, ma, axTitle=""):
-    '''Utility to book histograms 1D '''
-    h = ROOT.TH1I(hname, hname, bins, mi, ma) 
-    h.GetXaxis().SetTitle(axTitle)
-    self.hDict[hname] = h
-    return h
   
   ##### DrMon method #######
   def book2D(self, hname, bins, mi, ma, axTitle="", ayTitle=""):
@@ -125,18 +122,18 @@ class DrMon:
     '''Book ADC histograms '''
     for i in range(NumAdcChannels):
       hname  = "adc-%02d" % i
-      self.book1D( "adc-%02d" % i, bins, 0, 4096, 'adcCounts')
+      self.book1D( "adc-%02d" % i, self.hDict, bins, 0, 4096, 'adcCounts')
 
     # Histograms to monitor CALO position
     for kind in ("C", "S"):
       for ax in ("X", "Y"):
         hname = "calo%s_%s" % (kind, ax)
         htitl = "Calo %s center of gravity using %s fibers" % (ax, kind) 
-        self.book1D( hname, 160, -80, 80, 'adcCounts')
+        self.book1D( hname, self.hDict, 160, -80, 80, 'adcCounts')
     
     # Total energy
-    self.book1D( "PmtTotC",  bins, 0, 4096, 'adcCounts')
-    self.book1D( "PmtTotS",  bins, 0, 4096, 'adcCounts')
+    self.book1D( "PmtTotC", self.hDict,  bins, 0, 4096, 'adcCounts')
+    self.book1D( "PmtTotS", self.hDict,  bins, 0, 4096, 'adcCounts')
     self.book2D( "PmtTotSC", bins, 0, 4096, 'S [adcCounts]', 'C [adcCounts]')
     
     self.book2D( "HitMap_S", 3, -1.5, 1.5, 'tower', 'tower')
@@ -155,7 +152,7 @@ class DrMon:
       if i==2 or i==6: htitle = htitle + " DWC" + str(i/4+1)+ " up"
       if i==3 or i==7: htitle = htitle + " DWC" + str(i/4+1)+ " down"
       self.hDict[hname] = ROOT.TH1I(hname, htitle, bins, 0, 4096)      
-    self.book1D( "tdc_sz", NumTdcChannels, -0.5, NumTdcChannels+0.5, 'NumOfTdcCh per event')
+    self.book1D( "tdc_sz", self.hDict, NumTdcChannels, -0.5, NumTdcChannels+0.5, 'NumOfTdcCh per event')
 
     print("Booked TDCs histograms:")
   
@@ -165,8 +162,8 @@ class DrMon:
     for i in range(1, 3):
       dwc   = "dw%d" % i
       lim   = 2048
-      self.book1D(dwc + "l-r", bins, -lim, lim, "tdcCounts")
-      self.book1D(dwc + "u-d", bins, -lim, lim, "tdcCounts")
+      self.book1D(dwc + "l-r", self.hDict, bins, -lim, lim, "tdcCounts")
+      self.book1D(dwc + "u-d", self.hDict, bins, -lim, lim, "tdcCounts")
 
       lim  = 4096
       self.book2D(dwc + "l/r",   bins,    0, lim, "tdcCounts", "tdcCounts")
@@ -181,15 +178,15 @@ class DrMon:
     self.book2D("dwy1/y2", bins, -lim, lim, "tdcCounts", "tdcCounts")
 
     lim  =  48
-    self.book1D( "dwx1-x2", bins, -lim, lim, 'mm')
-    self.book1D( "dwy1-y2", bins, -lim, lim, 'mm')
+    self.book1D( "dwx1-x2", self.hDict, bins, -lim, lim, 'mm')
+    self.book1D( "dwy1-y2", self.hDict, bins, -lim, lim, 'mm')
     
     print("Booked DWCs histograms")
 
   ##### DrMon method #######
   def bookOthers(self):
     '''Book others histograms '''
-    self.book1D( "trMask", 8, -0.5, 7.5)
+    self.book1D( "trMask", self.hDict, 8, -0.5, 7.5)
     self.book2D( "pre/muon", 4096, 0, 4096, "preshower [adcCounts]",  "muonTraker [adcCounts]")
     self.book2D( "chere1/2", 4096, 0, 4096, "Cherenkov1 [adcCounts]", "Cherenkov2 [adcCounts]")
      
@@ -371,7 +368,7 @@ class DrMon:
     print("   r nEvts   Read other nEvts events")
     print("   q         Quit")
 
-
+  """
   ##### DrMon method #######
   def createCanvas(self, dim):
     '''Create a canvas'''
@@ -394,6 +391,7 @@ class DrMon:
     else: 
       self.canvas = ROOT.TCanvas('c1', s+'IDEA-DR', 0, 0, 800, 600)
     self.canNum = dim
+  """
   
   ##### DrMon method #######
   def setLogY(self, val):
@@ -525,7 +523,7 @@ class DrMon:
     self.canvas.cd(2); self.hDict['PmtTotC'].Draw()
     self.canvas.Update()
 
-
+  """
   ##### DrMon method #######
   def DrawSingleHisto(self, cmd, opt):
     '''Draw single histogram'''
@@ -554,6 +552,7 @@ class DrMon:
       print("Overflow :", h.GetBinContent(nBins+1))
       print(NOCOLOR)
     self.canvas.Update()
+  """
 
   ##### DrMon method #######
   def hDictDrawAndFit(self, hname):
@@ -644,7 +643,7 @@ def Usage():
 ################################################################
 def main(fname, events, sample, trigCut):
   print('Analyzing', fname)
-  drMon = DrMon(fname, events, sample, trigCut)
+  drMon = DrMonPMT(fname, events, sample, trigCut)
   drMon.bookAdcHistos(512)
   drMon.bookTdcHistos(512)
   drMon.bookDwcHistos(512)

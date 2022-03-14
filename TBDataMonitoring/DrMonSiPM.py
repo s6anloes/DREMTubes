@@ -7,13 +7,18 @@ import glob
 import os
 import re
 
+import DrMon
+from DrMon import BLUBOLD, BOLD, BLU, RED, YELLOW, NOCOLOR
+import importlib
+importlib.reload(DrMon)
+
 PathToData='./'
-BLUBOLD='\033[94m\033[1m'
-BOLD   ='\033[1m'
-BLU    ='\033[94m'
-RED    ='\033[31m'
-YELLOW ='\033[33m'
-NOCOLOR='\033[0m'
+#BLUBOLD='\033[94m\033[1m'
+#BOLD   ='\033[1m'
+#BLU    ='\033[94m'
+#RED    ='\033[31m'
+#YELLOW ='\033[33m'
+#NOCOLOR='\033[0m'
 
 # CONFIGURATION
 NumAdcChannels = 96
@@ -32,7 +37,7 @@ def handler(signal_rcv, frame):
   stop=True
 
 
-class DrMonSiPM:
+class DrMonSiPM(DrMon.DrMon):
   '''Data monitoring class for DualReadout 2021 Test Beam @H8  '''
 
   ##### DrMon method #######
@@ -64,20 +69,10 @@ class DrMonSiPM:
 
 
 ##### DrMon method #######
-  def book1D(self, hname, bins, mi, ma, axTitle="", ymin=None):
-    '''Utility to book histograms 1D '''
-    h = ROOT.TH1I(hname, hname, bins, mi, ma) 
-    h.GetXaxis().SetTitle(axTitle)
-    if ymin is not None:
-      h.SetMinimum(ymin)
-    self.hDict[hname] = h
-    return h
-
-##### DrMon method #######
   def bookOthers(self):
     '''Book histograms which were not booked during reading of file '''
-    self.book1D( "boardID", 5, -0.5, 4.5, "BoardID", ymin=0)
-    self.book1D( "numBoard", 5, 0.5, 5.5, "Num. of Boards per Event")
+    self.book1D( "boardID", self.hDict, 5, -0.5, 4.5, "BoardID", ymin=0)
+    self.book1D( "numBoard", self.hDict, 5, 0.5, 5.5, "Num. of Boards per Event")
 
 ##### DrMon method #######
   def evtFill(self, evt):
@@ -87,21 +82,6 @@ class DrMonSiPM:
       self.evtDict[key].append(evt)
     else:
       self.evtDict[key] = [evt]
-
-##### DrMon method #######
-  def checkOverUnderFlow(self, h):
-    '''Check and print out over- and underflow of histogram '''
-    nbins = h.GetNbinsX()
-    hname = h.GetName()
-    uFlow = h.GetBinContent(0)
-    oFlow = h.GetBinContent(nbins+1)
-    if uFlow+oFlow > 0:
-      print(BOLD)
-      print(hname, ":")
-      print(YELLOW)
-      print("Underflow:", uFlow)
-      print("Overflow :", oFlow)
-      print(NOCOLOR)
 
 ##### DrMon method #######
   def checkOverUnderFlowFill(self, h, entry, trigID):
@@ -159,12 +139,13 @@ class DrMonSiPM:
         
       # Number of boards fired in this event
       numboards = len(self.evtDict[key])
-      self.checkOverUnderFlowFill(self.hDict["numBoard"], numboards, uniqueTrigID)
+      self.hDict["numBoard"].Fill(numboards)
+      #self.checkOverUnderFlowFill(self.hDict["numBoard"], numboards, uniqueTrigID)
 
     # can only book these histos after the maximal value is known
-    self.book1D("lgPhaSum", 4096, 0, maxlg, "lgPha Sum")
-    self.book1D("hgPhaSum", 8192, 0, maxhg, "hgPha Sum")
-    self.book1D("lgPhaSumZoom", 512, 2000, 5000, "lg Pha Sum Zoom")
+    self.book1D("lgPhaSum", self.hDict, 4096, 0, maxlg, "lgPha Sum")
+    self.book1D("hgPhaSum", self.hDict, 8192, 0, maxhg, "hgPha Sum")
+    self.book1D("lgPhaSumZoom", self.hDict, 512, 2000, 5000, "lg Pha Sum Zoom")
 
     # need to loop over the list again to fill histos
     for lg, hg in zip(lglist, hglist):
@@ -217,9 +198,9 @@ class DrMonSiPM:
         self.evtFill(ev)
         
     
-    self.book1D("triggerID", 50, 0, maxtrigid, "TriggerID", ymin=0)
-    self.book1D("uniqueTrigID", 50, 0, maxtrigid, "UniqueTriggerID", ymin=0)
-    self.book1D("triggerTimeStamp", 50, 0, maxtrigtime, "TriggerTimeStamp", ymin=0)
+    self.book1D("triggerID", self.hDict, 50, 0, maxtrigid, "TriggerID", ymin=0)
+    self.book1D("uniqueTrigID", self.hDict, 50, 0, maxtrigid, "UniqueTriggerID", ymin=0)
+    self.book1D("triggerTimeStamp", self.hDict, 50, 0, maxtrigtime, "TriggerTimeStamp", ymin=0)
     self.hFillEvent()
         
 
@@ -290,6 +271,7 @@ class DrMonSiPM:
     self.canvas.cd(3);  self.hDict["triggerTimeStamp"].Draw()
     self.canvas.Update()
 
+  """
   ##### DrMon method #######
   def DrawSingleHisto(self, cmd, opt):
     '''Draw single histogram'''
@@ -308,18 +290,8 @@ class DrMonSiPM:
       h.SetFillColor( h.GetFillColor() + 3 )
     h.Draw(opt)
     self.checkOverUnderFlow(h)
-    """
-    nBins=h.GetNbinsX()
-    uFlow = h.GetBinContent(0)
-    oFlow = h.GetBinContent(nBins+1)
-    if uFlow+oFlow > 0:
-      print(BOLD)
-      print("Underflow:", uFlow)
-      print("Overflow :", oFlow)
-      print(NOCOLOR)
-    """
     self.canvas.Update()
-
+  """
     
   ##### DrMon method #######
   def PrintHelp(self):
@@ -335,8 +307,6 @@ class DrMonSiPM:
     print(BLU, "To exit type q", NOCOLOR)
 
     
-
-
 
 ##### DrMon method #######
   def commander(self):
