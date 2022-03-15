@@ -13,19 +13,6 @@ import importlib
 importlib.reload(DrMon)
 
 PathToData='./'
-#BLUBOLD='\033[94m\033[1m'
-#BOLD   ='\033[1m'
-#BLU    ='\033[94m'
-#RED    ='\033[31m'
-#YELLOW ='\033[33m'
-#NOCOLOR='\033[0m'
-
-# CONFIGURATION
-NumAdcChannels = 96
-NumTdcChannels = 48
-ns_TdcCounts   = 0.139063
-ns_mm          = 5.333333  
-mm_ns          = 1./ns_mm
 
 ################################################################
 # SIGNAL HANDLER ###############################################
@@ -49,11 +36,11 @@ class DrMonSiPM(DrMon.DrMon):
     self.sample     = sample   # Sampling fraction
     self.evtDict    = {}       # Dictionary of events
     self.hDict      = {}       # Dictionary of histograms
-    self.lastEv     = None     # Last DREvent object
+    #self.lastEv     = None     # Last DREvent object
     self.canvas     = None     # ROOT canvas
     self.canNum     = 0        # Number of pads in canvas
-    self.numOfLines = 0        # Number of lines in the file
-    self.lastLine   = 0        # Last line read
+    #self.numOfLines = 0        # Number of lines in the file
+    #self.lastLine   = 0        # Last line read
     self.runNum = "0"
     # last number in filename should be run number
     tmp=re.findall('\d+',fname)
@@ -84,18 +71,23 @@ class DrMonSiPM(DrMon.DrMon):
       self.evtDict[key] = [evt]
 
 ##### DrMon method #######
-  def checkOverUnderFlowFill(self, h, entry, trigID):
+  def checkEntryForOverUnderFlow(self, h, entry, trigID):
     '''Method for filling one entry into the histogram and checking for under-/overflow while filling'''
-    h.Fill(entry)
+    #h.Fill(entry)
+    goodentry = True
     nbins = h.GetNbinsX()
     entry_bin = h.FindBin(entry)
     hname = h.GetName()
     if entry_bin == 0:
       print(BOLD, YELLOW, hname+": Underflow", NOCOLOR)
       print(f"triggerID {trigID}; value: {entry}\n")
+      goodentry=False
     elif entry_bin == nbins+1:
       print(BOLD, YELLOW, hname+": Overflow", NOCOLOR)
       print(f"triggerID {trigID}; value: {entry}\n")
+      goodentry=False
+
+    return goodentry
 
 ##### DrMon method #######
   def hFill(self, event):
@@ -103,7 +95,8 @@ class DrMonSiPM(DrMon.DrMon):
     
     # These are the histograms which can be filled with "board info" only
     # i.e. no need to combine boards into full events
-    self.checkOverUnderFlowFill(self.hDict["boardID"], event.BoardID, event.TriggerID)
+    self.checkEntryForOverUnderFlow(self.hDict["boardID"], event.BoardID, event.TriggerID)
+    self.hDict["boardID"].Fill(event.BoardID)
     self.hDict["triggerID"].Fill(event.TriggerID)
     self.hDict["triggerTimeStamp"].Fill(event.TriggerTimeStamp)
 
@@ -117,11 +110,29 @@ class DrMonSiPM(DrMon.DrMon):
     maxlg = 0
     maxhg = 0
 
-    # one "key" is one triggerID
-    for key in self.evtDict:
+    badevtcounter = 0
+
+    # one key is one triggerID
+    for key in list(self.evtDict.keys()):
+      
+      # for counting trigID independent of number of boards
+      uniqueTrigID = self.evtDict[key][0].TriggerID
+        
+      # Number of boards fired in this event
+      # if numboards exceeds 5 the entire event is skipped for all histograms
+      numboards = len(self.evtDict[key])
+      dofill = self.checkEntryForOverUnderFlow(self.hDict["numBoard"], numboards, uniqueTrigID)
+      if dofill: 
+        self.hDict["numBoard"].Fill(numboards)
+      else: 
+        badevtcounter += 1
+        del self.evtDict[key]
+        continue
+
+      self.hDict["uniqueTrigID"].Fill(uniqueTrigID)
+
       lgPhaSum = 0
       hgPhaSum = 0
-      
       # one "evt" is the information of one board 
       for evt in self.evtDict[key]:
         self.hFill(evt)
@@ -133,15 +144,6 @@ class DrMonSiPM(DrMon.DrMon):
       if lgPhaSum > maxlg: maxlg = lgPhaSum 
       if hgPhaSum > maxhg: maxhg = hgPhaSum
 
-      # for counting trigID independent of number of boards
-      uniqueTrigID = self.evtDict[key][0].TriggerID
-      self.hDict["uniqueTrigID"].Fill(uniqueTrigID)
-        
-      # Number of boards fired in this event
-      numboards = len(self.evtDict[key])
-      self.hDict["numBoard"].Fill(numboards)
-      #self.checkOverUnderFlowFill(self.hDict["numBoard"], numboards, uniqueTrigID)
-
     # can only book these histos after the maximal value is known
     self.book1D("lgPhaSum", self.hDict, 4096, 0, maxlg+1, "lgPha Sum")
     self.book1D("hgPhaSum", self.hDict, 8192, 0, maxhg+1, "hgPha Sum")
@@ -152,6 +154,8 @@ class DrMonSiPM(DrMon.DrMon):
       self.hDict["lgPhaSum"].Fill(lg)
       self.hDict["hgPhaSum"].Fill(hg)
       self.hDict["lgPhaSumZoom"].Fill(lg)
+
+    print(f"Skipped {badevtcounter} events with more than 5 boards")
 
 
 ##### DrMon method #######
@@ -196,6 +200,8 @@ class DrMonSiPM(DrMon.DrMon):
         
         # add ev to evtDict for combining into full event information (1 event consists out of (up to) 5 boards which are treated as one event in this loop) 
         self.evtFill(ev)
+
+        if i>=self.maxEvts: break
         
     
     self.book1D("triggerID", self.hDict, 50, 0, maxtrigid+1, "TriggerID", ymin=0)
