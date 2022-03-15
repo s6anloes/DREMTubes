@@ -31,7 +31,7 @@ class DrMonSiPM(DrMon.DrMon):
   def __init__(self, fname, acqMode, maxEvts, sample):
     '''Constructor '''
     self.fname      = fname    # File name
-    self.acqMode    = acqMode
+    self.acqMode    = acqMode  # Acquisition mode of FERS boards
     self.maxEvts    = maxEvts  # Max number of events to process
     self.sample     = sample   # Sampling fraction
     self.evtDict    = {}       # Dictionary of events
