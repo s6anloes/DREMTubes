@@ -148,8 +148,12 @@ class DrMonSiPM(DrMon.DrMon):
 
 
 ##### DrMon method #######
-  def readFile(self, offset=0):
+  def readFile(self, fname=None):
     '''Read raw ascii data from file, call the decoding function, fill the histograms'''
+
+    if fname is None:
+        fname = self.fname
+
     print("Read and parse. Type CTRL+C to interrupt")
 
     if self.acqMode not in [0,1]: self.acqMode=0
@@ -159,7 +163,7 @@ class DrMonSiPM(DrMon.DrMon):
    
     badboardcounter = 0
     
-    with open(self.fname, "rb") as infile:
+    with open(fname, "rb") as infile:
       # reading in file header (not used atm)
       data=infile.read(14)
       i = 0
@@ -253,11 +257,11 @@ class DrMonSiPM(DrMon.DrMon):
     print(BLU, "\nenter histogram name to draw single histogram", NOCOLOR)
     print("\n--------------------------------------------------")
     print(BLU, "Available commands:", NOCOLOR)
-    for key in self.cmdShCuts:
+    for key in self.CMDSHCUTS:
       print(BLU, key, NOCOLOR)
     print(BLU, "To exit type q", NOCOLOR)
 
-  cmdShCuts  = {        # Mapping between command shortCuts and commands
+  CMDSHCUTS  = {        # Mapping between command shortCuts and commands
       "all"     : DrawAll,
       "board"   : DrawBoard,
       "pha"     : DrawPHA,
@@ -283,12 +287,12 @@ class DrMonSiPM(DrMon.DrMon):
         opt = pars[1]
 
       if   cmd == "q": print("Bye"); sys.exit(0)
-      elif cmd in self.cmdShCuts:  # SHORTCUTS
-        DrMonSiPM.cmdShCuts[cmd](self)
+      elif cmd in self.CMDSHCUTS:  # SHORTCUTS
+        DrMonSiPM.CMDSHCUTS[cmd](self)
       elif cmd.isdigit():          # SHORTCUTS WITH DIGITS
         hIdx = int(cmd)
-        if hIdx < len(self.cmdShCuts): 
-          self.cmdShCuts[ self.cmdShCutsV[hIdx] ]()
+        if hIdx < len(self.CMDSHCUTS): 
+          self.CMDSHCUTS[ self.cmdShCutsV[hIdx] ]()
       else: 
         self.DrawSingleHisto(cmd, opt)
 

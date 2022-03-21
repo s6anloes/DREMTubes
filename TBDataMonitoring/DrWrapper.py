@@ -7,12 +7,12 @@ import re
 
 import DrMonSiPM
 import DrMonPMT
-import DrMon
+#import DrMon
 from DrMon import BLUBOLD, BOLD, BLU, RED, YELLOW, NOCOLOR
 
 PathToData = './'
 
-class DrMonComb(DrMon.DrMon):
+class DrMonComb(DrMonSiPM.DrMonSiPM, DrMonPMT.DrMonPMT):
   '''Data monitoring class for DualReadout 2021 Test Beam @H8  '''
 
   ##### DrMon method #######
@@ -31,18 +31,11 @@ class DrMonComb(DrMon.DrMon):
     tmp=re.findall('\d+',fnamePMT)
     if len(tmp) != 0:
       self.runNum = tmp[-1]
-    '''
-    self.cmdShCuts  = {        # Mapping between command shortCuts and commands
-      "all"     : self.DrawAll,
-      "board"   : self.DrawBoard,
-      "pha"     : self.DrawPHA,
-      "trigger" : self.DrawTrigger,
-      "help"    : self.PrintHelp,
-    }
-    '''
 
-    self.drMonSiPM = DrMonSiPM.main(self.fnameSiPM, self.acqMode, self.maxEvts, self.sample)
-    self.drMonPMT  = DrMonPMT.main(self.fnamePMT, self.maxEvts, self.sample, self.trigCut)
+
+  def readFile(self):
+    DrMonSiPM.DrMonSiPM.readFile(self, fname=self.fnameSiPM)
+    #DrMonPMT.DrMonPMT.readFile(self, fname=self.fnamePMT)
 
   def commander(self):
     '''Interactive commander '''
@@ -61,14 +54,17 @@ class DrMonComb(DrMon.DrMon):
         opt = pars[1]
 
       if   cmd == "q": print("Bye"); sys.exit(0)
-      elif cmd in self.drMonSiPM.cmdShCuts:  # SHORTCUTS
-        self.drMonSiPM.cmdShCuts[cmd]()
+      elif cmd in DrMonSiPM.DrMonSiPM.CMDSHCUTS:  # SHORTCUTS
+        DrMonSiPM.DrMonSiPM.CMDSHCUTS[cmd](self)
+        #self.createCanvas(ndim)
+        #self.canvas = canvas
+        #self.canvas.Update()
       #elif cmd.isdigit():          # SHORTCUTS WITH DIGITS
         #hIdx = int(cmd)
         #if hIdx < len(self.cmdShCuts): 
           #self.cmdShCuts[ self.cmdShCutsV[hIdx] ]()
-      elif cmd in self.drMonPMT.cmdShCuts:
-        self.drMonPMT.cmdShCuts[cmd]()
+      #elif cmd in self.drMonPMT.cmdShCuts:
+        #self.drMonPMT.cmdShCuts[cmd]()
       #else: 
         #self.DrawSingleHisto(cmd, opt)
 
@@ -86,8 +82,8 @@ def Usage():
 def main(fnameSiPM, fnamePMT, acqMode, events, sample, trigCut):
   print(f'Analyzing {fnameSiPM} and {fnamePMT}')
   drMon = DrMonComb(fnameSiPM, fnamePMT, acqMode, events, sample, trigCut)
-  #drMon.bookOthers()
-  #drMon.readFile()
+  drMon.bookOthers()
+  drMon.readFile()
 
   return drMon
   

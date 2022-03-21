@@ -314,14 +314,18 @@ class DrMonPMT(DrMon.DrMon):
      
 
   ##### DrMon method #######
-  def readFile(self, offset=0):
+  def readFile(self, offset=0, fname=None):
     '''Read raw ascii data from file, call the decoding function, fill the histograms'''
     print("Read and parse. Type CTRL+C to interrupt")
      
     global stop   
     stop = False
     step=1
-    for i, line in enumerate(open(self.fname)):
+
+    if fname is None:
+      fname=self.fname
+
+    for i, line in enumerate(open(fname)):
       if stop: break
       if i < offset: continue
       self.lastLine = i
