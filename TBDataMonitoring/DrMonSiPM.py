@@ -36,23 +36,12 @@ class DrMonSiPM(DrMon.DrMon):
     self.sample     = sample   # Sampling fraction
     self.evtDict    = {}       # Dictionary of events
     self.hDict      = {}       # Dictionary of histograms
-    #self.lastEv     = None     # Last DREvent object
-    self.canvas     = None     # ROOT canvas
-    self.canNum     = 0        # Number of pads in canvas
-    #self.numOfLines = 0        # Number of lines in the file
-    #self.lastLine   = 0        # Last line read
     self.runNum = "0"
     # last number in filename should be run number
     tmp=re.findall('\d+',fname)
     if len(tmp) != 0:
       self.runNum = tmp[-1]
-    self.cmdShCuts  = {        # Mapping between command shortCuts and commands
-      "all"     : self.DrawAll,
-      "board"   : self.DrawBoard,
-      "pha"     : self.DrawPHA,
-      "trigger" : self.DrawTrigger,
-      "help"    : self.PrintHelp,
-    }
+    
 
 
 ##### DrMon method #######
@@ -210,28 +199,6 @@ class DrMonSiPM(DrMon.DrMon):
     self.hFillEvent()
         
 
-  ##### DrMon method #######
-  def createCanvas(self, dim):
-    '''Create a canvas'''
-    s="Run" + self.runNum + ": "
-    if   dim == 4: 
-      self.canvas = ROOT.TCanvas('c4', s+'IDEA-DR4', 0, 0, 800, 800)
-      self.canvas.Divide(2,2)
-    elif dim == 6: 
-      self.canvas = ROOT.TCanvas('c6', s+'IDEA-DR6', 0, 0, 1000, 600)
-      self.canvas.Divide(3,2)
-    elif dim == 2: 
-      self.canvas = ROOT.TCanvas('c2', s+'IDEA-DR2', 0, 0, 1000, 500)
-      self.canvas.Divide(2,1)
-    elif dim == 3: 
-      self.canvas = ROOT.TCanvas('c3', s+'IDEA-DR3', 0, 0, 1500, 500)
-      self.canvas.Divide(3,1)
-    elif dim == 9: 
-      self.canvas = ROOT.TCanvas('c9', s+'IDEA-DR9', 0, 0, 900, 900)
-      self.canvas.Divide(3,3)
-    else: 
-      self.canvas = ROOT.TCanvas('c1', s+'IDEA-DR', 0, 0, 800, 600)
-    self.canNum = dim
 
   ##### DrMon method #######
   def DrawAll(self):
@@ -276,28 +243,6 @@ class DrMonSiPM(DrMon.DrMon):
     self.canvas.cd(2);  self.hDict["uniqueTrigID"].Draw()
     self.canvas.cd(3);  self.hDict["triggerTimeStamp"].Draw()
     self.canvas.Update()
-
-  """
-  ##### DrMon method #######
-  def DrawSingleHisto(self, cmd, opt):
-    '''Draw single histogram'''
-
-    if self.canNum != 1:
-      self.createCanvas(1)
-        
-    h = None
-    hname = cmd
-    if hname in self.hDict:
-      h = self.hDict[hname]
-    else:
-      print(RED, BOLD, 'Unknown command', NOCOLOR)
-      return
-    if opt == "same":
-      h.SetFillColor( h.GetFillColor() + 3 )
-    h.Draw(opt)
-    self.checkOverUnderFlow(h)
-    self.canvas.Update()
-  """
     
   ##### DrMon method #######
   def PrintHelp(self):
@@ -312,7 +257,13 @@ class DrMonSiPM(DrMon.DrMon):
       print(BLU, key, NOCOLOR)
     print(BLU, "To exit type q", NOCOLOR)
 
-    
+  cmdShCuts  = {        # Mapping between command shortCuts and commands
+      "all"     : DrawAll,
+      "board"   : DrawBoard,
+      "pha"     : DrawPHA,
+      "trigger" : DrawTrigger,
+      "help"    : PrintHelp,
+    }   
 
 ##### DrMon method #######
   def commander(self):
@@ -333,7 +284,7 @@ class DrMonSiPM(DrMon.DrMon):
 
       if   cmd == "q": print("Bye"); sys.exit(0)
       elif cmd in self.cmdShCuts:  # SHORTCUTS
-        self.cmdShCuts[cmd]()
+        DrMonSiPM.cmdShCuts[cmd](self)
       elif cmd.isdigit():          # SHORTCUTS WITH DIGITS
         hIdx = int(cmd)
         if hIdx < len(self.cmdShCuts): 
