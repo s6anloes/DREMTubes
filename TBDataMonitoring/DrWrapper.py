@@ -34,8 +34,8 @@ class DrMonComb(DrMonSiPM.DrMonSiPM, DrMonPMT.DrMonPMT):
 
 
   def readFile(self):
-    DrMonSiPM.DrMonSiPM.readFile(self, fname=self.fnameSiPM)
-    #DrMonPMT.DrMonPMT.readFile(self, fname=self.fnamePMT)
+    DrMonSiPM.DrMonSiPM.readSiPMFile(self, fname=self.fnameSiPM)
+    DrMonPMT.DrMonPMT.readPMTFile(self, fname=self.fnamePMT)
 
   def commander(self):
     '''Interactive commander '''
@@ -82,7 +82,12 @@ def Usage():
 def main(fnameSiPM, fnamePMT, acqMode, events, sample, trigCut):
   print(f'Analyzing {fnameSiPM} and {fnamePMT}')
   drMon = DrMonComb(fnameSiPM, fnamePMT, acqMode, events, sample, trigCut)
-  drMon.bookOthers()
+  drMon.bookBoardHistos()
+  drMon.bookAdcHistos(512)
+  drMon.bookTdcHistos(512)
+  drMon.bookDwcHistos(512)
+  drMon.bookAuxiliaryHistos()
+  drMon.SetFillColor(42)
   drMon.readFile()
 
   return drMon

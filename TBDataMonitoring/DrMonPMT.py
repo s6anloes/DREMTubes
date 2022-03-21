@@ -184,7 +184,7 @@ class DrMonPMT(DrMon.DrMon):
     print("Booked DWCs histograms")
 
   ##### DrMon method #######
-  def bookOthers(self):
+  def bookAuxiliaryHistos(self):
     '''Book others histograms '''
     self.book1D( "trMask", self.hDict, 8, -0.5, 7.5)
     self.book2D( "pre/muon", 4096, 0, 4096, "preshower [adcCounts]",  "muonTraker [adcCounts]")
@@ -236,7 +236,7 @@ class DrMonPMT(DrMon.DrMon):
     if adc[ 0] > 232: h.Fill( 1,-1)
 
   ##### DrMon method #######
-  def hFill(self, event):
+  def hPMTFill(self, event):
     '''Fill the histogram '''
 
     if self.trigCut:
@@ -314,7 +314,7 @@ class DrMonPMT(DrMon.DrMon):
      
 
   ##### DrMon method #######
-  def readFile(self, offset=0, fname=None):
+  def readPMTFile(self, offset=0, fname=None):
     '''Read raw ascii data from file, call the decoding function, fill the histograms'''
     print("Read and parse. Type CTRL+C to interrupt")
      
@@ -335,7 +335,7 @@ class DrMonPMT(DrMon.DrMon):
           print(ev.headLine())
         if i%step==0: print(ev)
         if i>step*10: step=step*10
-        self.hFill(ev)
+        self.hPMTFill(ev)
         self.lastEv = ev
       if i >= self.maxEvts: break
 
@@ -585,7 +585,7 @@ class DrMonPMT(DrMon.DrMon):
     except ValueError: print('Invalid parameter'); return
     if optInt>=0:
       self.maxEvts = self.lastLine + optInt         
-      self.readFile(self.lastLine)
+      self.readPMTFile(self.lastLine)
 
   
   ##### DrMon method #######
@@ -651,9 +651,9 @@ def main(fname, events, sample, trigCut):
   drMon.bookAdcHistos(512)
   drMon.bookTdcHistos(512)
   drMon.bookDwcHistos(512)
-  drMon.bookOthers()
+  drMon.bookAuxiliaryHistos()
   drMon.SetFillColor(42)
-  drMon.readFile()
+  drMon.readPMTFile()
   
   return drMon
 

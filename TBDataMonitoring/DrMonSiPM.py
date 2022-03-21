@@ -45,7 +45,7 @@ class DrMonSiPM(DrMon.DrMon):
 
 
 ##### DrMon method #######
-  def bookOthers(self):
+  def bookBoardHistos(self):
     '''Book histograms which were not booked during reading of file '''
     self.book1D( "boardID", self.hDict, 5, -0.5, 4.5, "BoardID", ymin=0)
     self.book1D( "numBoard", self.hDict, 5, 0.5, 5.5, "Num. of Boards per Event")
@@ -79,7 +79,7 @@ class DrMonSiPM(DrMon.DrMon):
     return goodentry
 
 ##### DrMon method #######
-  def hFill(self, event):
+  def hSiPMFill(self, event):
     '''Fill the histograms '''
     
     # These are the histograms which can be filled with "board info" only
@@ -90,7 +90,7 @@ class DrMonSiPM(DrMon.DrMon):
     self.hDict["triggerTimeStamp"].Fill(event.TriggerTimeStamp)
 
 ##### DrMon method #######
-  def hFillEvent(self):
+  def hFillSiPMEvent(self):
     '''Fill the histograms with combined event information (after looping and combining event information) '''
     
     lglist = []
@@ -124,7 +124,7 @@ class DrMonSiPM(DrMon.DrMon):
       hgPhaSum = 0
       # one "evt" is the information of one board 
       for evt in self.evtDict[key]:
-        self.hFill(evt)
+        self.hSiPMFill(evt)
         lgPhaSum += sum(evt.lgPha)
         hgPhaSum += sum(evt.hgPha)
         lglist.append(lgPhaSum)
@@ -148,7 +148,7 @@ class DrMonSiPM(DrMon.DrMon):
 
 
 ##### DrMon method #######
-  def readFile(self, fname=None):
+  def readSiPMFile(self, fname=None):
     '''Read raw ascii data from file, call the decoding function, fill the histograms'''
 
     if fname is None:
@@ -200,7 +200,7 @@ class DrMonSiPM(DrMon.DrMon):
     self.book1D("triggerID", self.hDict, 50, 0, maxtrigid+1, "TriggerID", ymin=0)
     self.book1D("uniqueTrigID", self.hDict, 50, 0, maxtrigid+1, "UniqueTriggerID", ymin=0)
     self.book1D("triggerTimeStamp", self.hDict, 50, 0, maxtrigtime+1, "TriggerTimeStamp", ymin=0)
-    self.hFillEvent()
+    self.hFillSiPMEvent()
         
 
 
@@ -315,8 +315,8 @@ def Usage():
 def main(fname, acqMode, events, sample):
   print('Analyzing ', fname)
   drMon = DrMonSiPM(fname, acqMode, events, sample)
-  drMon.bookOthers()
-  drMon.readFile()
+  drMon.bookBoardHistos()
+  drMon.readSiPMFile()
 
   return drMon
   
