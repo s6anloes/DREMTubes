@@ -124,11 +124,13 @@ if __name__ == "__main__":
     fnameSiPM = PathToData + fnameSiPM
     fnamePMT  = f"sps2021data.run{run}.txt"
     fnamePMT  = PathToData + fnamePMT
-  elif len(fname) < 1:
-    list_of_SiPMfiles = glob.glob(PathToData + 'Run*_list.dat' ) 
-    fnameSiPM = max(list_of_files, key=os.path.getctime)
-    list_of_PMTfiles = glob.glob(PathToData + 'sps2021data*txt' ) 
-    fnamePMT = max(list_of_files, key=os.path.getctime)
+  else:
+    if (len(fnameSiPM)<1) :
+      list_of_SiPMfiles = glob.glob(PathToData + 'Run*_list.dat' ) 
+      fnameSiPM = max(list_of_SiPMfiles, key=os.path.getctime)
+    if (len(fnamePMT)<1):
+      list_of_PMTfiles = glob.glob(PathToData + 'sps2021data*txt' ) 
+      fnamePMT = max(list_of_PMTfiles, key=os.path.getctime)
 
   if not os.path.isfile(fnameSiPM):
     print(RED, "[ERROR] File ", fnameSiPM, " not found", NOCOLOR)
